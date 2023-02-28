@@ -93,7 +93,7 @@ export class AppService {
 			.pipe(
 				map((result) => {
 					return [
-						result?.data.price, // $1650 / ETH
+						result?.data.price, // X ETH/TOKEN
 						(result?.data.gasPrice * result?.data.estimatedGas) / 1e18, // ETH
 					];
 				}),
@@ -117,17 +117,17 @@ export class AppService {
 
 	// https://ethereum.org/en/developers/docs/gas/#base-fee
 	// https://docs.etherscan.io/api-endpoints/gas-tracker
-	// Netwok: Ethereum Mainnet
+	// Netwok: Configurable via .env file (ETHERSCAN_API_ENDPOINT)
 	async getGasPrice() {
 		this.logger.log(`Etherscan Gas Oracle`);
 		return this.httpService
 			.get(
-				`https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${process.env.ETHERSCAN_API_KEY}`,
+				`${process.env.ETHERSCAN_API_ENDPOINT}/api?module=proxy&action=eth_gasPrice&apikey=${process.env.ETHERSCAN_API_KEY}`,
 			)
 			.pipe(
 				map((res) => res.data?.result),
 				map((result) => {
-					return result?.FastGasPrice;
+					return parseInt(result) / 1e9; // Gwei
 				}),
 			)
 			.pipe(
