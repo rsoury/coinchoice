@@ -32,6 +32,21 @@
 $ yarn install
 ```
 
+## Application specific settings
+
+Create a .env file in the root path of the backend app with the following content:
+```bash
+TENDERLY_USER=
+TENDERLY_PROJECT=
+TENDERLY_ACCESS_KEY=
+ETHERSCAN_API_KEY=
+ETHERSCAN_API_ENDPOINT=
+ALCHEMY_API_KEY=
+OX_ENDPOINT=
+MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>.mongodb.net/<collection>?retryWrites=true&w=majority"
+NETWORK_ID=
+```
+
 ## Running the app
 
 ```bash
