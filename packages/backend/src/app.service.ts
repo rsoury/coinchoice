@@ -7,12 +7,17 @@ import {
 	EthersContract,
 	InjectContractProvider,
 	InjectEthersProvider,
+	EthersSigner,
+	InjectSignerProvider,
 } from 'nestjs-ethers';
+
+import { Wallet } from '@ethersproject/wallet';
 import { Contract } from '@ethersproject/contracts';
 import { BaseProvider } from '@ethersproject/providers';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
 import * as ERC20ABI from './utils/erc20.json';
+import * as RELAYERABI from './utils/relayer.json';
 
 @Injectable()
 export class AppService {
@@ -23,6 +28,8 @@ export class AppService {
 		private readonly ethersProvider: BaseProvider,
 		@InjectContractProvider()
 		private readonly ethersContract: EthersContract,
+		@InjectSignerProvider()
+		private readonly ethersSigner: EthersSigner,
 		private readonly httpService: HttpService,
 	) {}
 
@@ -38,13 +45,63 @@ export class AppService {
 		);
 	}
 
+	async executeMetaTransaction(
+		user: string,
+		token: string,
+		permit: string,
+		swapSpender: string,
+		to: string,
+		swapCall: string,
+	): Promise<any> {
+		const wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+		const contract: Contract = this.ethersContract.create(
+			process.env.RELAYER_CONTRACT_ADDRESS,
+			RELAYERABI.abi,
+			wallet,
+		);
+
+		const tx = await contract.relaySwapToETH(
+			user,
+			token,
+			permit,
+			swapSpender,
+			to,
+			swapCall,
+		);
+		console.log('tx:', tx);
+		//await tx.wait();
+		return tx;
+	}
+
+	// https://github.com/blockcoders/nestjs-ethers
+	async executeApprove(
+		token: string,
+		spender: string,
+		amount: string,
+	): Promise<any> {
+		const wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+		const contract: Contract = this.ethersContract.create(
+			token,
+			ERC20ABI.abi,
+			wallet,
+		);
+		const tx = await contract.approve(spender, amount);
+		console.log('tx:', tx);
+		//await tx.wait();
+		return tx;
+	}
+
 	// Check if the user has enough balance to pay the gas fee in the preferred currency
 	async checkBalanceForToken(
 		from: string,
 		to: string,
 		input: string,
 		token: string,
-	) {
+	): Promise<boolean> {
 		// Original Transaction
 		const txGasFeeEth = await this.getTenderlySimulationGasFee(from, to, input);
 		this.logger.log(`txGasFeeEth: ${txGasFeeEth}`);

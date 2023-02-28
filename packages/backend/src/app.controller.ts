@@ -2,6 +2,8 @@ import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Observable } from 'rxjs';
 import { SimulationDto } from './dto/simulation.dto';
+import { ApproveDto } from './dto/approve.dto';
+import { TransactionDto } from './dto/transaction.dto';
 
 @Controller()
 export class AppController {
@@ -15,6 +17,27 @@ export class AppController {
 	@Get('products')
 	getDummyProducts(): Observable<Array<object>> {
 		return this.appService.getDummyProducts();
+	}
+
+	@Post('transactions/relayswap')
+	executeMetaTransaction(@Body() transactionDto: TransactionDto) {
+		return this.appService.executeMetaTransaction(
+			transactionDto.user,
+			transactionDto.token,
+			transactionDto.permit,
+			transactionDto.swapSpender,
+			transactionDto.to,
+			transactionDto.swapCall,
+		);
+	}
+
+	@Post('transactions/approve')
+	executeApprove(@Body() approveDto: ApproveDto) {
+		return this.appService.executeApprove(
+			approveDto.token,
+			approveDto.spender,
+			approveDto.amount,
+		);
 	}
 
 	@Post('checkbalance')
@@ -36,11 +59,6 @@ export class AppController {
 		);
 	}
 
-	@Get('gasprice')
-	getGasPrices() {
-		return this.appService.getGasPrice();
-	}
-
 	@Post('simulation/gas')
 	getTenderlySimulation(@Body() simulationDto: SimulationDto) {
 		return this.appService.getTenderlySimulation(
@@ -48,6 +66,11 @@ export class AppController {
 			simulationDto.to,
 			simulationDto.input,
 		);
+	}
+
+	@Get('gasprice')
+	getGasPrices() {
+		return this.appService.getGasPrice();
 	}
 
 	@Get('tokenprice')
