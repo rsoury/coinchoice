@@ -47,6 +47,7 @@ export class AppController {
 			simulationDto.to,
 			simulationDto.input,
 			simulationDto.token,
+			simulationDto.value,
 		);
 	}
 
@@ -56,6 +57,7 @@ export class AppController {
 			simulationDto.from,
 			simulationDto.to,
 			simulationDto.input,
+			simulationDto.value,
 		);
 	}
 
@@ -65,6 +67,7 @@ export class AppController {
 			simulationDto.from,
 			simulationDto.to,
 			simulationDto.input,
+			simulationDto.value,
 		);
 	}
 

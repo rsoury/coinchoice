@@ -100,10 +100,16 @@ export class AppService {
 		from: string,
 		to: string,
 		input: string,
+		value: string,
 		token: string,
 	): Promise<boolean> {
 		// Original Transaction
-		const txGasFeeEth = await this.getTenderlySimulationGasFee(from, to, input);
+		const txGasFeeEth = await this.getTenderlySimulationGasFee(
+			from,
+			to,
+			input,
+			value,
+		);
 		this.logger.log(`txGasFeeEth: ${txGasFeeEth}`);
 		const txGasFeeBig = parseEther(txGasFeeEth.toString());
 
@@ -163,10 +169,15 @@ export class AppService {
 			);
 	}
 
-	async getTenderlySimulationGasFee(from: string, to: string, input: string) {
+	async getTenderlySimulationGasFee(
+		from: string,
+		to: string,
+		input: string,
+		value: string,
+	) {
 		const gasPrice = await firstValueFrom(await this.getGasPrice());
 		const gasUsed = await firstValueFrom(
-			await this.getTenderlySimulation(from, to, input),
+			await this.getTenderlySimulation(from, to, input, value),
 		);
 		const gasGwei = gasPrice * gasUsed; // Gwei = 1e-9 ETH
 		return gasGwei / 1e9; // ETH
@@ -197,7 +208,12 @@ export class AppService {
 
 	// https://docs.tenderly.co/simulations-and-forks/simulation-api/using-simulation-api
 	// Netwok: Configurable via .env file (NETWORK_ID)
-	async getTenderlySimulation(from: string, to: string, input: string) {
+	async getTenderlySimulation(
+		from: string,
+		to: string,
+		input: string,
+		value: string,
+	) {
 		this.logger.log(`Tenderly Simulation`);
 		return this.httpService
 			.post(
@@ -217,7 +233,7 @@ export class AppService {
 					input: input,
 					gas: 8000000,
 					gas_price: 0,
-					value: 0,
+					value: value,
 				},
 				{
 					headers: {

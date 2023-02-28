@@ -3,4 +3,5 @@ export class SimulationDto {
 	token: string;
 	from: string;
 	to: string;
+	value: string;
 }
