@@ -32,10 +32,6 @@ import path = require('path');
 @Injectable()
 export class AppService {
 	private readonly logger = new Logger(AppService.name);
-	private readonly apiSecret = fs.readFileSync(
-		path.resolve('fireblocks_secret.key'),
-		'utf8',
-	);
 
 	constructor(
 		@InjectEthersProvider()
@@ -104,7 +100,6 @@ export class AppService {
 		const fbksProvider = new FireblocksWeb3Provider({
 			apiKey: process.env.FIREBLOCKS_API_KEY,
 			apiBaseUrl: ApiBaseUrl.Sandbox,
-			// privateKey: this.apiSecret,
 			privateKey: process.env.FIREBLOCKS_SECRET_KEY,
 			rpcUrl: process.env.ALCHEMY_URL,
 			vaultAccountIds: ['2'],
