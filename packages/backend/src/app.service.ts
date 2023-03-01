@@ -18,6 +18,8 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
 import * as ERC20ABI from './utils/erc20.json';
 import * as RELAYERABI from './utils/relayer.json';
+import { Relayer } from './types/Relayer';
+import { PermitDto } from './dto/permit.dto';
 
 @Injectable()
 export class AppService {
@@ -48,7 +50,8 @@ export class AppService {
 	async executeMetaTransaction(
 		user: string,
 		token: string,
-		permit: string,
+		swapAmount: string,
+		permit: PermitDto,
 		swapSpender: string,
 		to: string,
 		swapCall: string,
@@ -56,15 +59,16 @@ export class AppService {
 		const wallet: Wallet = this.ethersSigner.createWallet(
 			process.env.WALLET_PRIVATE_KEY,
 		);
-		const contract: Contract = this.ethersContract.create(
+		const contract: Relayer = this.ethersContract.create(
 			process.env.RELAYER_CONTRACT_ADDRESS,
 			RELAYERABI.abi,
 			wallet,
-		);
+		) as Relayer;
 
 		const tx = await contract.relaySwapToETH(
 			user,
 			token,
+			swapAmount,
 			permit,
 			swapSpender,
 			to,
