@@ -96,13 +96,13 @@ export class AppService {
 	}
 
 	// Check if the user has enough balance to pay the gas fee in the preferred currency
-	async checkBalanceForToken(
+	async simulation(
 		from: string,
 		to: string,
 		input: string,
 		value: string,
 		token: string,
-	): Promise<boolean> {
+	) {
 		// Original Transaction
 		const txGasFeeEth = await this.getTenderlySimulationGasFee(
 			from,
@@ -121,13 +121,21 @@ export class AppService {
 		this.logger.log(`tokenPrice: ${tokenPrice}`);
 
 		const feeEth = swapGasFeeEth + txGasFeeEth;
-		const feeToken = feeEth / tokenPrice; // considering 18 decimals for now
+		const feeToken = feeEth / tokenPrice;
 		this.logger.log(`feeToken: ${feeToken}`);
 
-		const balanceTokenBig = await this.getTokenBalance(token, from); // considering 18 decimals for now
+		const balanceTokenBig = await this.getTokenBalance(token, from);
 		this.logger.log(`balanceToken: ${formatUnits(balanceTokenBig)}`);
 
-		return parseInt(formatUnits(balanceTokenBig)) > feeToken;
+		// return parseInt(formatUnits(balanceTokenBig)) > feeToken; // considering 18 decimals for now
+
+		return {
+			feeEth: feeEth,
+			feeToken: feeToken,
+			price: +tokenPrice,
+			token: token,
+			balance: balanceTokenBig,
+		};
 	}
 
 	async getEthBalance(address: string): Promise<BigNumber> {
@@ -157,7 +165,10 @@ export class AppService {
 				map((result) => {
 					return [
 						result?.data.price, // X ETH/TOKEN
-						(result?.data.gasPrice * result?.data.estimatedGas) / 1e18, // ETH
+						+(
+							(result?.data.gasPrice * result?.data.estimatedGas) /
+							1e18
+						).toFixed(18), // ETH
 					];
 				}),
 			)
@@ -180,7 +191,7 @@ export class AppService {
 			await this.getTenderlySimulation(from, to, input, value),
 		);
 		const gasGwei = gasPrice * gasUsed; // Gwei = 1e-9 ETH
-		return gasGwei / 1e9; // ETH
+		return +(gasGwei / 1e9).toFixed(18); // ETH
 	}
 
 	// https://ethereum.org/en/developers/docs/gas/#base-fee
@@ -195,7 +206,7 @@ export class AppService {
 			.pipe(
 				map((res) => res.data?.result),
 				map((result) => {
-					return parseInt(result) / 1e9; // Gwei
+					return +(parseInt(result) / 1e9).toFixed(18); // Gwei
 				}),
 			)
 			.pipe(

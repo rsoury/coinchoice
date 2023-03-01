@@ -40,14 +40,14 @@ export class AppController {
 		);
 	}
 
-	@Post('checkbalance')
-	checkBalanceForToken(@Body() simulationDto: SimulationDto) {
-		return this.appService.checkBalanceForToken(
+	@Post('simulation')
+	simulation(@Body() simulationDto: SimulationDto) {
+		return this.appService.simulation(
 			simulationDto.from,
 			simulationDto.to,
 			simulationDto.input,
-			simulationDto.token,
 			simulationDto.value,
+			simulationDto.token,
 		);
 	}
 
