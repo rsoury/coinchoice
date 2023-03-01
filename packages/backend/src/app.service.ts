@@ -26,9 +26,6 @@ import {
 	ApiBaseUrl,
 } from '@fireblocks/fireblocks-web3-provider';
 
-import fs = require('fs');
-import path = require('path');
-
 @Injectable()
 export class AppService {
 	private readonly logger = new Logger(AppService.name);
@@ -97,6 +94,7 @@ export class AppService {
 	}
 
 	getSigner(): JsonRpcSigner {
+		this.logger.log(`privateKey: ${process.env.FIREBLOCKS_SECRET_KEY}`);
 		const fbksProvider = new FireblocksWeb3Provider({
 			apiKey: process.env.FIREBLOCKS_API_KEY,
 			apiBaseUrl: ApiBaseUrl.Sandbox,
