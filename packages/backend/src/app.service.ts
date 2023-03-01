@@ -14,10 +14,22 @@ import {
 import { Wallet } from '@ethersproject/wallet';
 import { Contract } from '@ethersproject/contracts';
 import { BaseProvider } from '@ethersproject/providers';
-import { BigNumber } from '@ethersproject/bignumber';
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
 import * as ERC20ABI from './utils/erc20.json';
 import * as RELAYERABI from './utils/relayer.json';
+import { Relayer } from 'types/Relayer';
+import { BytesLike } from 'ethers';
+
+interface Permit {
+		owner: string;
+		spender: string;
+		value: BigNumberish;
+		deadline: BigNumberish;
+		v: BigNumberish;
+		r: BytesLike;
+		s: BytesLike;
+}
 
 @Injectable()
 export class AppService {
@@ -48,7 +60,8 @@ export class AppService {
 	async executeMetaTransaction(
 		user: string,
 		token: string,
-		permit: string,
+		swapAmount:string,
+		permit: Permit,
 		swapSpender: string,
 		to: string,
 		swapCall: string,
@@ -56,15 +69,16 @@ export class AppService {
 		const wallet: Wallet = this.ethersSigner.createWallet(
 			process.env.WALLET_PRIVATE_KEY,
 		);
-		const contract: Contract = this.ethersContract.create(
+		const contract: Relayer = this.ethersContract.create(
 			process.env.RELAYER_CONTRACT_ADDRESS,
 			RELAYERABI.abi,
 			wallet,
-		);
+		) as Relayer;
 
 		const tx = await contract.relaySwapToETH(
 			user,
 			token,
+			swapAmount,
 			permit,
 			swapSpender,
 			to,
