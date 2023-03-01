@@ -35,6 +35,7 @@ export class AppController {
 		return this.appService.executeMetaTransaction(
 			transactionDto.user,
 			transactionDto.token,
+			transactionDto.swapAmount,
 			transactionDto.permit,
 			transactionDto.swapSpender,
 			transactionDto.to,

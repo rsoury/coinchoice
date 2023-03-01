@@ -1,7 +1,10 @@
+import { PermitDto } from './permit.dto';
+
 export class TransactionDto {
 	user: string;
 	token: string;
-	permit: string;
+	swapAmount: string;
+	permit: PermitDto;
 	swapSpender: string;
 	to: string;
 	swapCall: string;
