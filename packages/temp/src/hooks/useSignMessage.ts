@@ -14,5 +14,13 @@ export function useSign(
 ) {
     console.log("Sign params", chainId, token, user, amount, spender, ethers.constants.MaxUint256.toString())
     if (!token || !user || !userAddress) return { handleSign: () => null }
-    return { handleSign: async () => await Sign(chainId, userAddress, token, user, amount, spender, ethers.constants.MaxUint256.toString()) }
+    return {
+        handleSign: async () => {
+            try {
+                await Sign(chainId, userAddress, token, user, amount, spender, ethers.constants.MaxUint256.toString())
+            } catch (e) {
+                console.log(e)
+            }
+        }
+    }
 }

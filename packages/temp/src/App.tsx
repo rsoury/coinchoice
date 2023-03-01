@@ -6,6 +6,8 @@ import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { publicProvider } from "wagmi/providers/public";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 import { YourComponent } from "./components/YourComponent";
+import '@rainbow-me/rainbowkit'
+
 
 const { chains, provider } = configureChains(
   [chain.mainnet, chain.polygon, chain.polygonMumbai, chain.goerli],
@@ -40,10 +42,7 @@ const App: FC = () => {
   return (
     <WagmiConfig client={wagmiClient}>
       <RainbowKitProvider chains={chains}>
-        <div id="App">
-          <Navbar />
           <YourComponent />
-        </div>
       </RainbowKitProvider>
     </WagmiConfig>
   )
