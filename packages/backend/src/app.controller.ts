@@ -1,5 +1,13 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	NotFoundException,
+	Post,
+	Query,
+} from '@nestjs/common';
 import { AppService } from './app.service';
+import { WalletService } from './wallet/wallet.service';
 import { Observable } from 'rxjs';
 import { SimulationDto } from './dto/simulation.dto';
 import { ApproveDto } from './dto/approve.dto';
@@ -7,7 +15,10 @@ import { TransactionDto } from './dto/transaction.dto';
 
 @Controller()
 export class AppController {
-	constructor(private readonly appService: AppService) {}
+	constructor(
+		private readonly appService: AppService,
+		private readonly walletService: WalletService,
+	) {}
 
 	@Get('hello')
 	getHello(): string {
@@ -41,14 +52,17 @@ export class AppController {
 	}
 
 	@Post('simulation')
-	simulation(@Body() simulationDto: SimulationDto) {
-		return this.appService.simulation(
-			simulationDto.from,
-			simulationDto.to,
-			simulationDto.input,
-			simulationDto.value,
-			simulationDto.token,
-		);
+	async simulation(@Body() simulationDto: SimulationDto) {
+		const wallet = await this.walletService.findOne(simulationDto.from);
+		if (wallet)
+			return this.appService.simulation(
+				simulationDto.from,
+				simulationDto.to,
+				simulationDto.input,
+				simulationDto.value,
+				wallet.token,
+			);
+		else throw new NotFoundException('Wallet not found');
 	}
 
 	@Post('simulation/gasfee')
