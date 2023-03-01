@@ -11,7 +11,7 @@ export class Wallet {
 	@Prop({ required: true })
 	token: string;
 
-	@Prop({ required: true })
+	@Prop()
 	amount: number;
 
 	@Prop({ required: true })

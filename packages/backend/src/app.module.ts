@@ -5,14 +5,17 @@ import { HttpModule } from '@nestjs/axios';
 import { EthersModule, GOERLI_NETWORK } from 'nestjs-ethers';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { WalletService } from './wallet/wallet.service';
 import { EventsModule } from './events/events.module';
 import { WalletModule } from './wallet/wallet.module';
+import { Wallet, WalletSchema } from 'schemas/wallet.schema';
 
 @Module({
 	imports: [
 		ConfigModule.forRoot(),
 		HttpModule,
 		MongooseModule.forRoot(process.env.MONGODB_URI),
+		MongooseModule.forFeature([{ name: Wallet.name, schema: WalletSchema }]),
 		EthersModule.forRoot({
 			network: GOERLI_NETWORK,
 			alchemy: process.env.ALCHEMY_API_KEY,
@@ -29,6 +32,6 @@ import { WalletModule } from './wallet/wallet.module';
 		WalletModule,
 	],
 	controllers: [AppController],
-	providers: [AppService],
+	providers: [AppService, WalletService],
 })
 export class AppModule {}

@@ -7,12 +7,17 @@ import {
 	EthersContract,
 	InjectContractProvider,
 	InjectEthersProvider,
+	EthersSigner,
+	InjectSignerProvider,
 } from 'nestjs-ethers';
+
+import { Wallet } from '@ethersproject/wallet';
 import { Contract } from '@ethersproject/contracts';
 import { BaseProvider } from '@ethersproject/providers';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
 import * as ERC20ABI from './utils/erc20.json';
+import * as RELAYERABI from './utils/relayer.json';
 
 @Injectable()
 export class AppService {
@@ -23,6 +28,8 @@ export class AppService {
 		private readonly ethersProvider: BaseProvider,
 		@InjectContractProvider()
 		private readonly ethersContract: EthersContract,
+		@InjectSignerProvider()
+		private readonly ethersSigner: EthersSigner,
 		private readonly httpService: HttpService,
 	) {}
 
@@ -38,15 +45,71 @@ export class AppService {
 		);
 	}
 
+	async executeMetaTransaction(
+		user: string,
+		token: string,
+		permit: string,
+		swapSpender: string,
+		to: string,
+		swapCall: string,
+	): Promise<any> {
+		const wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+		const contract: Contract = this.ethersContract.create(
+			process.env.RELAYER_CONTRACT_ADDRESS,
+			RELAYERABI.abi,
+			wallet,
+		);
+
+		const tx = await contract.relaySwapToETH(
+			user,
+			token,
+			permit,
+			swapSpender,
+			to,
+			swapCall,
+		);
+		console.log('tx:', tx);
+		//await tx.wait();
+		return tx;
+	}
+
+	// https://github.com/blockcoders/nestjs-ethers
+	async executeApprove(
+		token: string,
+		spender: string,
+		amount: string,
+	): Promise<any> {
+		const wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+		const contract: Contract = this.ethersContract.create(
+			token,
+			ERC20ABI.abi,
+			wallet,
+		);
+		const tx = await contract.approve(spender, amount);
+		console.log('tx:', tx);
+		//await tx.wait();
+		return tx;
+	}
+
 	// Check if the user has enough balance to pay the gas fee in the preferred currency
-	async checkBalanceForToken(
+	async simulation(
 		from: string,
 		to: string,
 		input: string,
+		value: string,
 		token: string,
 	) {
 		// Original Transaction
-		const txGasFeeEth = await this.getTenderlySimulationGasFee(from, to, input);
+		const txGasFeeEth = await this.getTenderlySimulationGasFee(
+			from,
+			to,
+			input,
+			value,
+		);
 		this.logger.log(`txGasFeeEth: ${txGasFeeEth}`);
 		const txGasFeeBig = parseEther(txGasFeeEth.toString());
 
@@ -58,13 +121,21 @@ export class AppService {
 		this.logger.log(`tokenPrice: ${tokenPrice}`);
 
 		const feeEth = swapGasFeeEth + txGasFeeEth;
-		const feeToken = feeEth / tokenPrice; // considering 18 decimals for now
+		const feeToken = feeEth / tokenPrice;
 		this.logger.log(`feeToken: ${feeToken}`);
 
-		const balanceTokenBig = await this.getTokenBalance(token, from); // considering 18 decimals for now
+		const balanceTokenBig = await this.getTokenBalance(token, from);
 		this.logger.log(`balanceToken: ${formatUnits(balanceTokenBig)}`);
 
-		return parseInt(formatUnits(balanceTokenBig)) > feeToken;
+		// return parseInt(formatUnits(balanceTokenBig)) > feeToken; // considering 18 decimals for now
+
+		return {
+			feeEth: feeEth,
+			feeToken: feeToken,
+			price: +tokenPrice,
+			token: token,
+			balance: balanceTokenBig,
+		};
 	}
 
 	async getEthBalance(address: string): Promise<BigNumber> {
@@ -93,8 +164,11 @@ export class AppService {
 			.pipe(
 				map((result) => {
 					return [
-						result?.data.price, // $1650 / ETH
-						(result?.data.gasPrice * result?.data.estimatedGas) / 1e18, // ETH
+						result?.data.price, // X ETH/TOKEN
+						+(
+							(result?.data.gasPrice * result?.data.estimatedGas) /
+							1e18
+						).toFixed(18), // ETH
 					];
 				}),
 			)
@@ -106,28 +180,33 @@ export class AppService {
 			);
 	}
 
-	async getTenderlySimulationGasFee(from: string, to: string, input: string) {
+	async getTenderlySimulationGasFee(
+		from: string,
+		to: string,
+		input: string,
+		value: string,
+	) {
 		const gasPrice = await firstValueFrom(await this.getGasPrice());
 		const gasUsed = await firstValueFrom(
-			await this.getTenderlySimulation(from, to, input),
+			await this.getTenderlySimulation(from, to, input, value),
 		);
 		const gasGwei = gasPrice * gasUsed; // Gwei = 1e-9 ETH
-		return gasGwei / 1e9; // ETH
+		return +(gasGwei / 1e9).toFixed(18); // ETH
 	}
 
 	// https://ethereum.org/en/developers/docs/gas/#base-fee
 	// https://docs.etherscan.io/api-endpoints/gas-tracker
-	// Netwok: Ethereum Mainnet
+	// Netwok: Configurable via .env file (ETHERSCAN_API_ENDPOINT)
 	async getGasPrice() {
 		this.logger.log(`Etherscan Gas Oracle`);
 		return this.httpService
 			.get(
-				`https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${process.env.ETHERSCAN_API_KEY}`,
+				`${process.env.ETHERSCAN_API_ENDPOINT}/api?module=proxy&action=eth_gasPrice&apikey=${process.env.ETHERSCAN_API_KEY}`,
 			)
 			.pipe(
 				map((res) => res.data?.result),
 				map((result) => {
-					return result?.FastGasPrice;
+					return +(parseInt(result) / 1e9).toFixed(18); // Gwei
 				}),
 			)
 			.pipe(
@@ -140,7 +219,12 @@ export class AppService {
 
 	// https://docs.tenderly.co/simulations-and-forks/simulation-api/using-simulation-api
 	// Netwok: Configurable via .env file (NETWORK_ID)
-	async getTenderlySimulation(from: string, to: string, input: string) {
+	async getTenderlySimulation(
+		from: string,
+		to: string,
+		input: string,
+		value: string,
+	) {
 		this.logger.log(`Tenderly Simulation`);
 		return this.httpService
 			.post(
@@ -148,7 +232,7 @@ export class AppService {
 				// the transaction
 				{
 					/* Simulation Configuration */
-					save: true, // if true simulation is saved and shows up in the dashboard
+					save: false, // if true simulation is saved and shows up in the dashboard
 					save_if_fails: false, // if true, reverting simulations show up in the dashboard
 					simulation_type: 'full', // full or quick (full is default)
 
@@ -160,7 +244,7 @@ export class AppService {
 					input: input,
 					gas: 8000000,
 					gas_price: 0,
-					value: 0,
+					value: value,
 				},
 				{
 					headers: {
