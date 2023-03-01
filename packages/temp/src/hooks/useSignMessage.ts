@@ -12,7 +12,7 @@ export function useSign(
     spender: string,
 
 ) {
-    if (!token || !user || !userAddress) return { handleSign: () => null }
     console.log("Sign params", chainId, token, user, amount, spender, ethers.constants.MaxUint256.toString())
+    if (!token || !user || !userAddress) return { handleSign: () => null }
     return { handleSign: async () => await Sign(chainId, userAddress, token, user, amount, spender, ethers.constants.MaxUint256.toString()) }
 }

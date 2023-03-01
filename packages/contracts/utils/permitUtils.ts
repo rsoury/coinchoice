@@ -36,24 +36,6 @@ const PERMIT_ALLOWED_TYPE = [
 const structure = (name: string, version: string, chainId: number, tokenAddress: string, nonce: string, value: string, owner: string, spender: string, deadline: string) => {
     return {
         "types": {
-            // "EIP712Domain": [
-            //     {
-            //         "name": "name",
-            //         "type": "string"
-            //     },
-            //     {
-            //         "name": "version",
-            //         "type": "string"
-            //     },
-            //     {
-            //         "name": "chainId",
-            //         "type": "uint256"
-            //     },
-            //     {
-            //         "name": "verifyingContract",
-            //         "type": "address"
-            //     }
-            // ],
             "Permit": [{
                 "name": "owner",
                 "type": "address"
@@ -162,22 +144,4 @@ export const produceSig = async (
     console.log("Data", data)
     console.log("Signature", signature)
     return { signature, split }
-    // ethersProvider
-    //     .send('eth_signTypedData_v4', [account, data])
-    //     .then(splitSignature)
-    // .then((signature) => {
-    //     setSignatureData({
-    //         v: signature.v,
-    //         r: signature.r,
-    //         s: signature.s,
-    //         deadline: signatureDeadline,
-    //         amount: value,
-    //         nonce: nonceNumber,
-    //         chainId,
-    //         owner: account,
-    //         spender,
-    //         tokenAddress,
-    //         permitType: permitInfo.type,
-    //     })
-    // })
 }

@@ -4,7 +4,9 @@ import ERC20 from '../abi/erc20.json'
 import { ERC20MockWithPermit } from "../types/ERC20MockWithPermit"
 
 const TOKEN_META = {
-    'USDC': { decimals: 6, symbol: 'USDC', name: 'USD Coin' }
+    'USDC': { decimals: 6, symbol: 'USDC', name: 'USD Coin' },
+    'DAI': { decimals: 18, symbol: 'DAI', name: 'DAI Stablecoin' },
+    'WBTC': { decimals: 8, symbol: 'WBTC', name: 'Wrapped Bitcoin' }
 }
 
 const TOKEN_DICT: { [id: string]: { [chainId: number]: string } } = {

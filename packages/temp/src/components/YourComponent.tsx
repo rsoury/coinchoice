@@ -9,17 +9,15 @@ import { fetchSigner } from '@wagmi/core'
 const spender = '0x7E64d52D285E47b088f7b1df2438C1782099101a'
 
 export const YourComponent = () => {
-  const test = useSignMessage({ message: '', })
   const account = useAccount()
   const [signer, setSigner] = useState<any>(null)
   useEffect(() => {
 
-    if (account && !signer) {
+    if (account) {
       const fetchData = async () => {
         const _signer = await fetchSigner()
         setSigner(_signer)
       }
-
       // call the function
       fetchData()
 
