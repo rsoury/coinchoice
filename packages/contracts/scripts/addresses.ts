@@ -3,7 +3,7 @@
 
 export const addresses = {
     relayer: {
-        5: '0x7a2516452498381FE97b5ec430095F1aE389bb1e',
+        5: '0xC38f5162545995b75103Bb11796A7ae0f17602AA',
         80001: '0x7E64d52D285E47b088f7b1df2438C1782099101a'
     },
     // not permit compatible
@@ -26,6 +26,7 @@ export const addresses = {
     // enable testnet mode in options top right
     // permit compatible
     aaveUSDC: {
-        80001: '0xe9DcE89B076BA6107Bb64EF30678efec11939234'
+        80001: '0xe9DcE89B076BA6107Bb64EF30678efec11939234',
+        5: '0x65aFADD39029741B3b8f0756952C74678c9cEC93'
     }
 }

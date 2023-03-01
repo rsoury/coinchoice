@@ -1,4 +1,3 @@
-import { MaxUint256 } from "@uniswap/permit2-sdk"
 import { keccak256, splitSignature } from "ethers/lib/utils"
 import { ERC20, ERC20MockWithPermit } from "../types"
 import { BigNumber, constants, Wallet } from "ethers";
@@ -114,7 +113,7 @@ export const produceSig = async (
         spender,
         value: amount,
         nonce: nonceNumber,
-        deadline: MaxUint256,
+        deadline: ethers.constants.MaxUint256,
     }
     const chainId = await provider.getChainId()
     const name = await token.name()
