@@ -11,7 +11,7 @@ import { WalletService } from './wallet/wallet.service';
 import { Observable } from 'rxjs';
 import { SimulationDto } from './dto/simulation.dto';
 import { ApproveDto } from './dto/approve.dto';
-import { TransactionDto } from './dto/transaction.dto';
+import { TransactionDto, TransactionTestDto } from './dto/transaction.dto';
 
 @Controller()
 export class AppController {
@@ -28,6 +28,15 @@ export class AppController {
 	@Get('products')
 	getDummyProducts(): Observable<Array<object>> {
 		return this.appService.getDummyProducts();
+	}
+
+	@Post('transactions/test')
+	testMetaTransaction(@Body() transactionTestDto: TransactionTestDto) {
+		return this.appService.test_executeMetaTransaction(
+			transactionTestDto.swapSpender,
+			transactionTestDto.to,
+			transactionTestDto.swapCall,
+		);
 	}
 
 	@Post('transactions/relayswap')

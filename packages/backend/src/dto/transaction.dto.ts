@@ -9,3 +9,9 @@ export class TransactionDto {
 	to: string;
 	swapCall: string;
 }
+
+export class TransactionTestDto {
+	swapSpender: string;
+	to: string;
+	swapCall: string;
+}
