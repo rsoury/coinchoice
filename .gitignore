@@ -54,3 +54,8 @@ tsconfig.tsbuildinfo
 *.log
 .pnp.*
 coverage.json
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

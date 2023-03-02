@@ -7,22 +7,31 @@ import {
 	EthersContract,
 	InjectContractProvider,
 	InjectEthersProvider,
-	EthersSigner,
-	InjectSignerProvider,
 } from 'nestjs-ethers';
 
-import { Wallet } from '@ethersproject/wallet';
 import { Contract } from '@ethersproject/contracts';
-import { BaseProvider } from '@ethersproject/providers';
+import {
+	BaseProvider,
+	Web3Provider,
+	JsonRpcSigner,
+} from '@ethersproject/providers';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
+import {
+	FireblocksWeb3Provider,
+	ApiBaseUrl,
+} from '@fireblocks/fireblocks-web3-provider';
+import { ethers } from 'ethers';
+
 import * as ERC20ABI from './utils/erc20.json';
 import * as RELAYERABI from './utils/relayer.json';
-import { Relayer } from './types/Relayer';
-import { PermitDto } from './dto/permit.dto';
 import { Sign } from './utils/permitUtils';
 import { getToken } from './utils/getToken';
-import { ethers } from 'ethers';
+import { Relayer } from './types/Relayer';
+import { PermitDto } from './dto/permit.dto';
+
+import fs = require('fs');
+import path = require('path');
 
 @Injectable()
 export class AppService {
@@ -33,10 +42,8 @@ export class AppService {
 		private readonly ethersProvider: BaseProvider,
 		@InjectContractProvider()
 		private readonly ethersContract: EthersContract,
-		@InjectSignerProvider()
-		private readonly ethersSigner: EthersSigner,
 		private readonly httpService: HttpService,
-	) { }
+	) {}
 
 	getHello(): string {
 		return 'Hello World!';
@@ -59,13 +66,10 @@ export class AppService {
 		to: string,
 		swapCall: string,
 	): Promise<any> {
-		const wallet: Wallet = this.ethersSigner.createWallet(
-			process.env.WALLET_PRIVATE_KEY,
-		);
-		const contract: Relayer = this.ethersContract.create(
+		const contract = new Contract(
 			process.env.RELAYER_CONTRACT_ADDRESS,
 			RELAYERABI.abi,
-			wallet,
+			this.getSigner(),
 		) as Relayer;
 
 		const tx = await contract.relaySwapToETH(
@@ -78,44 +82,42 @@ export class AppService {
 			swapCall,
 		);
 		console.log('tx:', tx);
-		//await tx.wait();
 		return tx;
 	}
-
 
 	async test_executeMetaTransaction(
 		swapSpender: string,
 		to: string,
 		swapCall: string,
 	): Promise<any> {
-
-		const sign_wallet: Wallet = this.ethersSigner.createWallet(
-			process.env.WALLET_PRIVATE_KEY,
-		);
-
-		const wallet: Wallet = this.ethersSigner.createWallet(
-			process.env.WALLET_PRIVATE_KEY,
-		);
-		const relayer: Relayer = this.ethersContract.create(
+		const signer = this.getSigner();
+		const relayer = new Contract(
 			process.env.RELAYER_CONTRACT_ADDRESS,
 			RELAYERABI.abi,
-			wallet,
+			signer,
 		) as Relayer;
 
-		const signAmount = '11000000' // in usdc
-		const swapAmount = '1000000000000000'  // in network ccy
+		const signAmount = '11000000'; // in usdc
+		const swapAmount = '1000000000000000'; // in network ccy
 		const chainId = 5;
-		const token = getToken(sign_wallet, chainId, 'USDC')
-		const signedParams = await Sign(5, token, sign_wallet, signAmount, relayer.address, ethers.constants.MaxUint256.toString())
-
+		const token = getToken(signer, chainId, 'USDC');
+		const signedParams = await Sign(
+			5,
+			token,
+			signer,
+			process.env.FIREBLOCKS_WALLET_ADDRESS,
+			signAmount,
+			relayer.address,
+			ethers.constants.MaxUint256.toString(),
+		);
 
 		const tx = await relayer.relaySwapToETH(
-			sign_wallet.address,
+			process.env.FIREBLOCKS_WALLET_ADDRESS,
 			token.address,
 			swapAmount,
 			{
 				value: signAmount,
-				owner: sign_wallet.address,
+				owner: process.env.FIREBLOCKS_WALLET_ADDRESS,
 				spender: relayer.address,
 				deadline: ethers.constants.MaxUint256.toString(),
 				v: signedParams.split.v,
@@ -131,25 +133,34 @@ export class AppService {
 		return tx;
 	}
 
-
 	// https://github.com/blockcoders/nestjs-ethers
 	async executeApprove(
 		token: string,
 		spender: string,
 		amount: string,
 	): Promise<any> {
-		const wallet: Wallet = this.ethersSigner.createWallet(
-			process.env.WALLET_PRIVATE_KEY,
-		);
-		const contract: Contract = this.ethersContract.create(
-			token,
-			ERC20ABI.abi,
-			wallet,
-		);
+		const contract = new Contract(token, ERC20ABI.abi, this.getSigner());
+
 		const tx = await contract.approve(spender, amount);
 		console.log('tx:', tx);
 		//await tx.wait();
 		return tx;
+	}
+
+	getSigner(): JsonRpcSigner {
+		const privateKey = fs.readFileSync(
+			path.resolve('fireblocks_secret.key'),
+			'utf8',
+		);
+		const fbksProvider = new FireblocksWeb3Provider({
+			apiKey: process.env.FIREBLOCKS_API_KEY,
+			apiBaseUrl: ApiBaseUrl.Sandbox,
+			privateKey: privateKey,
+			rpcUrl: process.env.ALCHEMY_URL,
+			vaultAccountIds: ['2'],
+		});
+		const provider = new Web3Provider(fbksProvider);
+		return provider.getSigner(process.env.FIREBLOCKS_WALLET_ADDRESS);
 	}
 
 	// Check if the user has enough balance to pay the gas fee in the preferred currency
