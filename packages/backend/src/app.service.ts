@@ -20,6 +20,9 @@ import * as ERC20ABI from './utils/erc20.json';
 import * as RELAYERABI from './utils/relayer.json';
 import { Relayer } from './types/Relayer';
 import { PermitDto } from './dto/permit.dto';
+import { Sign } from './utils/permitUtils';
+import { getToken } from './utils/getToken';
+import { ethers } from 'ethers';
 
 @Injectable()
 export class AppService {
@@ -33,7 +36,7 @@ export class AppService {
 		@InjectSignerProvider()
 		private readonly ethersSigner: EthersSigner,
 		private readonly httpService: HttpService,
-	) {}
+	) { }
 
 	getHello(): string {
 		return 'Hello World!';
@@ -78,6 +81,56 @@ export class AppService {
 		//await tx.wait();
 		return tx;
 	}
+
+
+	async test_executeMetaTransaction(
+		swapSpender: string,
+		to: string,
+		swapCall: string,
+	): Promise<any> {
+
+		const sign_wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+
+		const wallet: Wallet = this.ethersSigner.createWallet(
+			process.env.WALLET_PRIVATE_KEY,
+		);
+		const relayer: Relayer = this.ethersContract.create(
+			process.env.RELAYER_CONTRACT_ADDRESS,
+			RELAYERABI.abi,
+			wallet,
+		) as Relayer;
+
+		const signAmount = '11000000' // in usdc
+		const swapAmount = '1000000000000000'  // in network ccy
+		const chainId = 5;
+		const token = getToken(sign_wallet, chainId, 'USDC')
+		const signedParams = await Sign(5, token, sign_wallet, signAmount, relayer.address, ethers.constants.MaxUint256.toString())
+
+
+		const tx = await relayer.relaySwapToETH(
+			sign_wallet.address,
+			token.address,
+			swapAmount,
+			{
+				value: signAmount,
+				owner: sign_wallet.address,
+				spender: relayer.address,
+				deadline: ethers.constants.MaxUint256.toString(),
+				v: signedParams.split.v,
+				r: signedParams.split.r,
+				s: signedParams.split.s,
+			},
+			swapSpender,
+			to,
+			swapCall,
+		);
+		console.log('tx:', tx);
+		//await tx.wait();
+		return tx;
+	}
+
 
 	// https://github.com/blockcoders/nestjs-ethers
 	async executeApprove(
