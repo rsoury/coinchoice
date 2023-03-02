@@ -26,6 +26,9 @@ import {
 	ApiBaseUrl,
 } from '@fireblocks/fireblocks-web3-provider';
 
+import fs = require('fs');
+import path = require('path');
+
 @Injectable()
 export class AppService {
 	private readonly logger = new Logger(AppService.name);
@@ -94,11 +97,21 @@ export class AppService {
 	}
 
 	getSigner(): JsonRpcSigner {
-		this.logger.log(`privateKey: ${process.env.FIREBLOCKS_SECRET_KEY}`);
+		// const privateKeyEncoded =
+		// 	process.env.FIREBLOCKS_SECRET_KEY_ENCODED_1 +
+		// 	process.env.FIREBLOCKS_SECRET_KEY_ENCODED_2;
+		// const privateKey = Buffer.from(privateKeyEncoded, 'base64').toString(
+		// 	'utf-8',
+		// );
+		const privateKey = fs.readFileSync(
+			path.resolve('fireblocks_secret.key'),
+			'utf8',
+		);
+		//const privateKey = process.env.FIREBLOCKS_SECRET_KEY;
 		const fbksProvider = new FireblocksWeb3Provider({
 			apiKey: process.env.FIREBLOCKS_API_KEY,
 			apiBaseUrl: ApiBaseUrl.Sandbox,
-			privateKey: process.env.FIREBLOCKS_SECRET_KEY,
+			privateKey: privateKey,
 			rpcUrl: process.env.ALCHEMY_URL,
 			vaultAccountIds: ['2'],
 		});
