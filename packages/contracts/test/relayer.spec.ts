@@ -1,9 +1,9 @@
 import hre from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers, network } from 'hardhat'
-import { ERC20MockWithPermit, ERC20MockWithPermit__factory, Relayer, Relayer__factory } from '../types';
+import { ERC20MockWithPermit, ERC20MockWithPermit__factory, Relayer, Relayer__factory, TestCallee__factory, WETH9, WETH9__factory } from '../types';
 
-import { parseEther } from 'ethers/lib/utils';
+import { AbiCoder, parseEther } from 'ethers/lib/utils';
 import { MaxUint256, PermitSingle } from '@uniswap/permit2-sdk';
 import { TypedDataDomain } from 'ethers';
 import { produceSig } from './permitUtils';
@@ -55,12 +55,14 @@ describe('relayer', async () => {
     let deployer: SignerWithAddress
     let user: SignerWithAddress
     let token: ERC20MockWithPermit
+    let weth: WETH9
     let relayer: Relayer
     const chainId = hre.network.config.chainId ?? 0
     beforeEach('Deploy Account, Trader, Uniswap and Compound', async () => {
         [deployer, user] = await ethers.getSigners();
         token = await new ERC20MockWithPermit__factory(deployer).deploy("Mock", "M")
-        relayer = await new Relayer__factory(deployer).deploy()
+        weth = await new WETH9__factory(deployer).deploy()
+        relayer = await new Relayer__factory(deployer).deploy(weth.address)
 
         // mint 
         await token.mint(user.address, parseEther('1000'))
@@ -99,6 +101,20 @@ describe('relayer', async () => {
         const bal = await token.balanceOf(relayer.address)
         expect(bal.toString()).to.equal('10')
         expect(balUserBefore.sub(balUserAfter).toString()).to.equal('10')
+    })
+
+
+    it('allows unsafe call', async () => {
+        const testCallee = await new TestCallee__factory(deployer).deploy()
+
+        let call = testCallee.interface.encodeFunctionData('testCall1', [true])
+
+        await relayer.connect(deployer).unsafeGeneralCall(testCallee.address, call)
+
+
+        call = testCallee.interface.encodeFunctionData('testCall2', [true])
+
+        await relayer.connect(deployer).unsafeGeneralCall(testCallee.address, call)
     })
 
 })

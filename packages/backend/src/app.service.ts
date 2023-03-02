@@ -17,14 +17,18 @@ import {
 } from '@ethersproject/providers';
 import { BigNumber } from '@ethersproject/bignumber';
 import { parseEther, formatUnits } from '@ethersproject/units';
-import * as ERC20ABI from './utils/erc20.json';
-import * as RELAYERABI from './utils/relayer.json';
-import { Relayer } from './types/Relayer';
-import { PermitDto } from './dto/permit.dto';
 import {
 	FireblocksWeb3Provider,
 	ApiBaseUrl,
 } from '@fireblocks/fireblocks-web3-provider';
+import { ethers } from 'ethers';
+
+import * as ERC20ABI from './utils/erc20.json';
+import * as RELAYERABI from './utils/relayer.json';
+import { Sign } from './utils/permitUtils';
+import { getToken } from './utils/getToken';
+import { Relayer } from './types/Relayer';
+import { PermitDto } from './dto/permit.dto';
 
 import fs = require('fs');
 import path = require('path');
@@ -78,6 +82,54 @@ export class AppService {
 			swapCall,
 		);
 		console.log('tx:', tx);
+		return tx;
+	}
+
+	async test_executeMetaTransaction(
+		swapSpender: string,
+		to: string,
+		swapCall: string,
+	): Promise<any> {
+		const signer = this.getSigner();
+		const relayer = new Contract(
+			process.env.RELAYER_CONTRACT_ADDRESS,
+			RELAYERABI.abi,
+			signer,
+		) as Relayer;
+
+		const signAmount = '11000000'; // in usdc
+		const swapAmount = '1000000000000000'; // in network ccy
+		const chainId = 5;
+		const token = getToken(signer, chainId, 'USDC');
+		const signedParams = await Sign(
+			5,
+			token,
+			signer,
+			process.env.FIREBLOCKS_WALLET_ADDRESS,
+			signAmount,
+			relayer.address,
+			ethers.constants.MaxUint256.toString(),
+		);
+
+		const tx = await relayer.relaySwapToETH(
+			process.env.FIREBLOCKS_WALLET_ADDRESS,
+			token.address,
+			swapAmount,
+			{
+				value: signAmount,
+				owner: process.env.FIREBLOCKS_WALLET_ADDRESS,
+				spender: relayer.address,
+				deadline: ethers.constants.MaxUint256.toString(),
+				v: signedParams.split.v,
+				r: signedParams.split.r,
+				s: signedParams.split.s,
+			},
+			swapSpender,
+			to,
+			swapCall,
+		);
+		console.log('tx:', tx);
+		//await tx.wait();
 		return tx;
 	}
 
